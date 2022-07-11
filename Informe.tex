@@ -1,0 +1,276 @@
+\documentclass[
+    11pt,
+    spanish,
+	a4paper
+]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{graphicx}
+\usepackage{authoraftertitle}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{verbatim}
+\captionsetup[table]{labelformat=empty}
+
+\def\doctype{INFORME DE INVESTIGACIÓN}
+\title{Softwares de Simulación para Tecnología Electrónica y otras cátedras de
+  Ingeniera.}
+\author{Gonzalo Nahuel Vaca}
+
+\begin{document}
+
+\makeatletter
+\begin{titlepage}
+	\begin{center}
+		\vspace*{1cm}
+		
+		\Huge
+		\textbf{\doctype}
+		\vspace{0.5cm}
+    
+		\LARGE
+		\@title
+		\vspace{0.5cm}
+    
+		\textbf{Compatibilidad Electromagnética}
+		
+		\vspace{1.5cm}
+		
+		\textbf{\@author}
+
+		\vspace{3.5cm}
+
+		%\includegraphics[width=0.8\textwidth]{img/logoFIUBA.pdf}
+		
+		\vfill
+		Departamento de Ingeniería e Investigaciones Tecnológicas\\
+		Universidad Nacional de la Matanza\\
+		Argentina\\
+		\today
+	\end{center}
+\end{titlepage}
+\makeatother
+\newpage
+
+\section{Introducción}
+\label{sec:introduccion}
+
+Este documento se propone detallar todos los aspectos referidos a la evaluación
+de programas para el cálculo de compatibilidad electromagnética.
+
+\section{OpenEMS}
+\label{sec:openems}
+
+En esta sección se encuentran los detalles de la evaluación del programa OpenEMS.
+
+\subsection{Instalación}
+\label{sub:oinstalacion}
+
+A continuación se detallan los pasos a seguir para tener el programa instalado
+en el ordenador.
+
+\begin{enumerate}
+  \item Satisfacer las dependencias del programa, a continuación se muestran los
+    comandos para el sistema Ubuntu 22.04 LTS:
+    \begin{itemize}
+      \item Dependencias mínimas obligatorias:\\
+        \texttt{sudo apt-get install\\
+        build-essential cmake git libhdf5-dev libvtk7-dev\\
+        libboost-all-dev libcgal-dev libtinyxml-dev\\
+        qtbase5-dev libvtk7-qt-dev}
+      \item GNU Octave (equivalente GNU de Matlab, opcional):\\
+        \texttt{sudo apt-get install octave liboctave-dev}
+      \item Interfaz Python (opcional):\\
+        \texttt{sudo pip3 install matplotlib cython h5py}
+    \end{itemize}
+  \item Clonar e instalar
+    \begin{itemize}
+      \item Clonar el repositorio y sus submódulos:\\
+        \texttt{git clone --recursive\\
+          https://github.com/thliebig/openEMS-Project.git}
+      \item Dentro del repositorio ejecutar:
+        \begin{verbatim}
+./update_openEMS.sh ~/opt/openEMS --python
+        \end{verbatim}
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Verificación}
+\label{sub:overificacion}
+
+La prueba más simple para verificar la instalación es ejecutar el binario de
+openEMS.
+Para lograrlo debe navegar hasta la carpeta de la instalación, la cuál
+normalmente es \texttt{opt/openEMS/bin} dentro de su usuario; luego se debe ejecutar
+el comando \texttt{./openEMS} y deberá observar una salida como la siguiente:
+
+\begin{verbatim}
+--------------------------------------------------------
+| openEMS 64bit -- version v0.0.35-76-gd4448fa
+| (C) 2010-2018 Thorsten Liebig <thorsten.liebig@gmx.de>
+| GPL license
+--------------------------------------------------------
+Used external libraries:
+CSXCAD -- Version: v0.6.2-109-gcd9decb
+hdf5   -- Version: 1.10.7
+compiled against: HDF5 library version: 1.10.7
+tinyxml -- compiled against: 2.6.2
+fparser
+boost  -- compiled against: 1_74
+vtk -- Version: 7.1.1
+compiled against: 7.1.1
+\end{verbatim}
+
+A continuación se detallan los pasos a seguir para verificar la correcta
+instalación de openEMS con GNU Octave.
+
+Como se muestra en la figura \ref{fig:octavepath} se debe colocar el \emph{path}
+de openEMS en la ventana de comandos.
+
+Los comandos para agregar los \emph{path} son:
+
+\begin{verbatim}
+addpath('~/opt/openEMS/share/openEMS/matlab');
+addpath('~/opt/openEMS/share/CSXCAD/matlab');
+\end{verbatim}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./img/octavepath.png}
+	\caption{Configuración de \emph{path} en GNU Octave.}
+	\label{fig:octavepath}
+\end{figure}
+
+El siguiente paso es verificar la interfaz CXCAD, a continuación se muestra el
+comando y respuesta en la ventana de comandos de GNU Octave:
+
+\begin{verbatim}
+>> InitCSX
+ans = 
+Properties: []
+\end{verbatim}
+
+Con la interfaz inicializada se puede realizar una verificación de sus funciones
+como se muestra a continuación:
+
+\begin{verbatim}
+>> InitFDTD('NrTS', 0, 'EndCriteria', 0)
+ans = 
+    ATTRIBUTE: [1x1 struct]
+\end{verbatim}
+
+El siguiente paso es verificar el correcto funcionamiento del simulador como se
+muestra a continuación:
+
+\begin{verbatim}
+>> RunOpenEMS( '.', 'nonexistant.xml', '' )
+[...]
+Read openEMS xml file: nonexistant.xml ...
+openEMS: Error File-Loading failed!!! File: nonexistant.xml
+\end{verbatim}
+
+El error que se muestra significa que el simulador funciona correctamente ya que
+su argumento es un archivo inexistente. Sin embargo, el binario del simulador se
+invocó sin problemas.
+
+Es importante verificar que el programa de visualización de definiciones de
+geometría funcione de forma correcta, esto se logra con el siguiente comando:
+
+\begin{verbatim}
+CSXGeomPlot('nonexistant.xml')
+\end{verbatim}
+
+La ventana de comandos debe arrojar un error ya que el archivo de geometría no
+existe, sin embargo se debe ejecutar el visualizador como se muestra en la
+figura \ref{fig:geovisual}.
+
+Llegado a este punto se puede concluir que openEMS fue instalado de forma correcta.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./img/geovisual.png}
+	\caption{Programa de visualización de geometrías.}
+	\label{fig:geovisual}
+\end{figure}
+
+Se recomienda instalar el programa ParaView para tener una herramienta para
+visualizar las simulaciones.
+Los ejemplos de este documento utilizan ParaView para representar de forma
+gráfica los resultados.
+
+\subsection{Ejemplos de uso}
+\label{sub:oejemplos}
+
+\subsubsection{Guía de onda superficial}
+\label{subsub:oejemplo1}
+
+Las instrucciones para generar la geometría, su excitación y la definición de
+las variables a observar son las siguientes:
+
+\begin{verbatim}
+close all
+clear
+clc
+FDTD = InitFDTD('NrTS',100, 'EndCriteria',0, 'OverSampling',50);
+FDTD = SetSinusExcite(FDTD,10e6);
+FDTD = SetBoundaryCond(FDTD,{'PMC' 'PMC' 'PEC' 'PEC' 'MUR' 'MUR'});
+CSX = InitCSX();
+mesh.x = -10:10;
+mesh.y = -10:10;
+mesh.z = -10:30;
+CSX = DefineRectGrid(CSX, 1, mesh);
+CSX = AddExcitation(CSX,'excitation',0,[0 1 0]);
+CSX = AddBox(CSX,'excitation',0,[-10 -10 0],[10 10 0]);
+CSX = AddDump(CSX,'Et');
+CSX = AddBox(CSX,'Et',0,[-10 0 -10],[10 0 30]);
+mkdir('tmp');
+WriteOpenEMS('tmp/tmp.xml',FDTD,CSX);
+\end{verbatim}
+
+Antes de lanzar la simulación se procede a verificar la geometría generada con
+los siguientes comandos:
+
+\begin{verbatim}
+CSXGeomPlot( 'tmp/tmp.xml' );
+\end{verbatim}
+
+En la figura \ref{fig:geo1} se puede observar el plano que simula una guía de onda.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./img/geo1.png}
+	\caption{Geometría del ejemplo 1.}
+	\label{fig:geo1}
+\end{figure}
+
+Una vez satisfecho con la geometría, se procede a lanzar la simulación. Para
+eso, primero debe cerrar el visualizador de geometría y escribir el siguiente
+comando:
+
+\begin{verbatim}
+RunOpenEMS('tmp','tmp.xml','');
+\end{verbatim}
+
+Para visualizar la simulación se puede usar el programa ParaView. Para eso se
+debe abrir el archivo \texttt{Et..vtr}, luego debe ingresar al inspector de
+objetos y seleccionar que el color se asocie al \emph{E-Field} además de indicar
+el eje \emph{Y}. Seguidamente,
+puede hacer click en el boton de \emph{play}.
+Se verá una animación con la variación del potencial eléctrico en el tiempo, sin
+embargo los colores se encuentran sobre el plano y no se puede apreciar con
+facilidad la onda.
+
+Para mejorar la representación se debe colocar el filtro \emph{warp-by-vector}
+que deformará la representación según la intensidad del campo, esto genera una
+representación en donde se puede observar con facilidad la onda en la guía.
+
+En la figura \ref{fig:sim1} se puede observar la guía de onda simulada en un plano.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./img/sim1.png}
+	\caption{Simulación del ejemplo 1.}
+	\label{fig:sim1}
+\end{figure}
+
+\end{document}
