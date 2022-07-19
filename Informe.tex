@@ -273,4 +273,164 @@ En la figura \ref{fig:sim1} se puede observar la guía de onda simulada en un pl
 	\label{fig:sim1}
 \end{figure}
 
+\subsubsection{Esfera metálica dispersa un frente de onda}
+\label{subsub:oejemplo2}
+
+En este ejemplo se simula la dispersión que produce una esfera metálica cuando
+una onda incide sobre ella.
+Para tal fin se generó una geometría esférica con la propiedad física de ser un
+conductor eléctrico. Se la puede ver en la figura \ref{fig:sim2}.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./img/ejemplo_esfera.png}
+	\caption{Esfera metálica del ejemplo 2.}
+	\label{fig:sim2}
+\end{figure}
+
+Luego se definió un cubo como volumen de simulación lo suficientemente grande
+para que el cálculo numérico sea lo más preciso posible pero que los tiempos de
+cómputo sean aceptables. El volumen se puede observar en la figura \ref{fig:sim3}.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./img/ejemplo_cubo.png}
+	\caption{Volumen de simulación del ejemplo 2.}
+	\label{fig:sim3}
+\end{figure}
+
+Luego se corrió la simulación y se la visualizó con ParaView.
+Se tomaron capturas en 3 momentos distintos y se los muestran en 2 y 3
+dimensiones.
+Se pueden observar en las figuras \ref{fig:sim4},\ref{fig:sim5},\ref{fig:sim6},\ref{fig:sim7},\ref{fig:sim8} y \ref{fig:sim9}.
+
+A continuación se describe el código para generar el ejemplo:
+
+\begin{verbatim}
+% Si es la primera ejecución de octave de la sesión de trabajo
+% agregar openEMS al path, sino physical_constants no va a estar
+% definido
+addpath('~/opt/openEMS/share/openEMS/matlab');
+addpath('~/opt/openEMS/share/CSXCAD/matlab');
+
+close all
+clear
+clc
+
+%% Se configura la simulación
+physical_constants;
+unit = 1e-3; % longitudes en mm
+
+sphere.rad = 200;
+
+inc_angle = 0 /180*pi; % ángulo incidente (x-axis) en rad
+
+% Tamaño de la caja de simulación
+SimBox = 1000;
+PW_Box = 750;
+
+%% configuración FDTD parámetros y función de excitación
+f_start =  50e6; % frecuencia de inicio
+f_stop = 1000e6; % frecuencia de fin
+f0 = 500e6;
+
+FDTD = InitFDTD( );
+FDTD = SetGaussExcite( FDTD, 0.5*(f_start+f_stop), 0.5*(f_stop-f_start) );
+BC = [1 1 1 1 1 1]*3;  % set boundary conditions
+FDTD = SetBoundaryCond( FDTD, BC );
+
+%% configurar CSXCAD geometría y malla
+max_res = c0 / f_stop / unit / 20; % cell size: lambda/20
+CSX = InitCSX();
+
+% creación de malla
+smooth_mesh = SmoothMeshLines([0 SimBox/2], max_res);
+mesh.x = unique([-smooth_mesh smooth_mesh]);
+mesh.y = mesh.x;
+mesh.z = mesh.x;
+
+%% creación de esfera de metal
+CSX = AddMetal( CSX, 'sphere' ); % se crea un conductor perfecto (PEC)
+CSX = AddSphere(CSX,'sphere',10,[0 0 0],sphere.rad);
+
+%% excitación de onda planar
+k_dir = [cos(inc_angle) sin(inc_angle) 0]; % dirección de la onda planar
+E_dir = [0 0 1]; % polarización de la onda planar --> E_z
+
+CSX = AddPlaneWaveExcite(CSX, 'plane_wave', k_dir, E_dir, f0);
+start = [-PW_Box/2 -PW_Box/2 -PW_Box/2];
+stop  = -start;
+CSX = AddBox(CSX, 'plane_wave', 0, start, stop);
+
+CSX = AddDump(CSX, 'Et');
+start = [mesh.x(1)   mesh.y(1)   0];
+stop  = [mesh.x(end) mesh.y(end) 0];
+CSX = AddBox(CSX, 'Et', 0, start, stop);
+
+%% cálculo nf2ff
+start = [mesh.x(1)     mesh.y(1)     mesh.z(1)];
+stop  = [mesh.x(end) mesh.y(end) mesh.z(end)];
+[CSX nf2ff] = CreateNF2FFBox(CSX, 'nf2ff', start, stop);
+
+mesh = AddPML(mesh,8);
+
+CSX = DefineRectGrid( CSX, unit, mesh );
+
+%% carpeta de simulación
+Sim_Path = 'Sphere_RCS';
+Sim_CSX = 'Sphere_RCS.xml';
+
+[status, message, messageid] = rmdir( Sim_Path, 's' );
+[status, message, messageid] = mkdir( Sim_Path );
+
+WriteOpenEMS( [Sim_Path '/' Sim_CSX], FDTD, CSX );
+
+%% Se muestra la geometría
+CSXGeomPlot( [Sim_Path '/' Sim_CSX] );
+
+%% se corre la simulación
+RunOpenEMS( Sim_Path, Sim_CSX);
+\end{verbatim}
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./img/impacto.png}
+	\caption{Simulación momento 1.}
+	\label{fig:sim4}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./img/mitad.png}
+	\caption{Simulación momento 2.}
+	\label{fig:sim5}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./img/salida.png}
+	\caption{Simulación momento 3.}
+	\label{fig:sim6}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./img/impacto3d.png}
+	\caption{Simulación momento 1 en 3D.}
+	\label{fig:sim7}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./img/mitad3d.png}
+	\caption{Simulación momento 2 en 3D.}
+	\label{fig:sim8}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./img/salida3d.png}
+	\caption{Simulación momento 3 en 3D.}
+	\label{fig:sim9}
+\end{figure}
+
 \end{document}
