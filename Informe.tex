@@ -433,4 +433,20 @@ RunOpenEMS( Sim_Path, Sim_CSX);
 	\label{fig:sim9}
 \end{figure}
 
+\subsection{Primeros intentos de simular circuitos impresos}
+
+OpenEMS utiliza un \emph{parser} para transformar los archivos \emph{HyperLynx}
+que exportan programas como KiCad e Eagle en un formato que el motor de matlab pueda entender.
+Sin embargo, el \emph{parser} hyp2mat es un programa cuyo único autor dió por finalizado y quedaron deprecadas las
+recetas de Autotools y las bibliotecas que utiliza para \emph{linkear}.
+
+Existen tres posibilidades en este punto:
+
+\begin{itemize}
+	\item Crear un dockerfile que genere una imagen con Octave y OpenEMS en base a una versión de Ubuntu 
+	que soporte la última versión de hyp2mat que se publicó.
+	\item Utilizar un método alternativo para importar los circuitos impresos.
+	\item Abandonar OpenEMS como herramienta viable.
+\end{itemize}
+
 \end{document}
