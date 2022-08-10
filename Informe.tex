@@ -23,25 +23,25 @@
 \begin{titlepage}
 	\begin{center}
 		\vspace*{1cm}
-		
+
 		\Huge
 		\textbf{\doctype}
 		\vspace{0.5cm}
-    
+
 		\LARGE
 		\@title
 		\vspace{0.5cm}
-    
+
 		\textbf{Compatibilidad Electromagnética}
-		
+
 		\vspace{1.5cm}
-		
+
 		\textbf{\@author}
 
 		\vspace{1.5cm}
 
 		\includegraphics[width=0.4\textwidth]{img/logoUNLaM.jpeg}
-		
+
 		\vfill
 		Departamento de Ingeniería e Investigaciones Tecnológicas\\
 		Universidad Nacional de la Matanza\\
@@ -448,5 +448,93 @@ Existen tres posibilidades en este punto:
 	\item Utilizar un método alternativo para importar los circuitos impresos.
 	\item Abandonar OpenEMS como herramienta viable.
 \end{itemize}
+
+\subsection{Montaje de GNU/Octave y OpenEMS en docker}
+
+Se pudo crear una serie de recetas que generan una imagen y contenedor con Octave y OpenEMS.
+
+Dockerfile:
+
+\begin{verbatim}
+# Universidad Nacional de la Matanza.
+
+# Los Dockerfiles comienzan a partir de una imagen base
+FROM ubuntu:focal
+
+# En esta sección se actualiza la base de datos del gestor
+# de paquetes (apt) y se procede a instalar las herramientas
+# y sus dependencias
+RUN apt-get update &&  DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
+  octave-common \
+  openems \
+  octave-openems \
+  libcsxcad0
+
+# Se genera un usuario de desarrollo (dev) con permisos de
+# administrador y sin necesidad de ingresar su contraseña
+RUN adduser --disabled-password --gecos '' dev && \
+  usermod -aG sudo dev && \
+  echo "dev ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# Se hace /bin/sh symlink a bash en vez de dash:
+RUN echo "dash dash/sh boolean false" | debconf-set-selections
+RUN DEBIAN_FRONTEND=noninteractive dpkg-reconfigure dash
+
+# Cuando se ingrese al contenedor se ingresara como dev
+USER dev
+ENV HOME /home/dev
+ENV LANG en_US.UTF-8
+
+# Se crea una carpeta de trabajo y se la configura como
+# workdir
+RUN mkdir /home/dev/workspace
+WORKDIR /home/dev/workspace
+\end{verbatim}
+
+Receta de creación:
+
+\begin{verbatim}
+#!/bin/bash
+docker build \
+    -t openems .
+\end{verbatim}
+
+Receta de lanzamiento del contenedor:
+
+\begin{verbatim}
+#!/bin/bash
+
+# El comentario que comienza con un signo de exclamacion
+# tiene la finalidad de indicarle al sistema con que binario
+# debe ejecutar este archivo, en nuestro caso el intérprete de
+# BASH
+
+# Se define el directorio del host como "path to working directory"
+# (PWD), esto es, la carpeta desde donde lanzamos este script.
+DIRECTORIO_DE_MI_MAQUINA=PWD
+
+docker run -ti \
+    -e DISPLAY=$DISPLAY \
+    --net="host" \
+    --name="UNLaM" \
+    --hostname="UNLAM" \
+    -v $DIRECTORIO_DE_MI_MAQUINA:/home/dev/workspace \
+    openems
+    /bin/bash
+\end{verbatim}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.5\textwidth]{./img/docker-build.png}
+	\caption{Construcción de imagen}
+	\label{fig:dockerbuild}
+\end{figure}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\textwidth]{./img/docker-run.png}
+	\caption{Ejecución del contenedor}
+	\label{fig:dockerrun}
+\end{figure}
 
 \end{document}
